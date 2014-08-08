@@ -40,6 +40,7 @@ module VagrantPlugins
       end
 
       def prepare(machine, folders, opts)
+        config = machine.config.smb
         machine.ui.output(I18n.t("vagrant_sf_smb.preparing"))
 
         script_path = File.expand_path("../scripts/set_share.ps1", __FILE__)
@@ -53,7 +54,11 @@ module VagrantPlugins
           end
         end
 
-        if need_auth
+        @creds[:username] = config.default_user unless !config.default_user
+        @creds[:password] = config.default_pass unless !config.default_pass
+        
+
+        if need_auth && !config.default_user && !config.default_pass
           machine.ui.detail(I18n.t("vagrant_sf_smb.warning_password") + "\n ")
           @creds[:username] = machine.ui.ask("Username: ")
           @creds[:password] = machine.ui.ask("Password (will be hidden): ", echo: false)
@@ -81,6 +86,7 @@ module VagrantPlugins
       end
 
       def enable(machine, folders, nfsopts)
+        config = machine.config.smb
         machine.ui.output(I18n.t("vagrant_sf_smb.mounting"))
 
         # Make sure that this machine knows this dance
@@ -95,6 +101,9 @@ module VagrantPlugins
         host_ip = nil
         need_host_ip = false
         folders.each do |id, data|
+
+          data[:smb_host] = config.default_host unless data[:smb_host] || !config.default_host
+
           if !data[:smb_host]
             need_host_ip = true
             break
